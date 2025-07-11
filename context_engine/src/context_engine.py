@@ -13,19 +13,22 @@ from typing import List, Any, Optional, Dict
 
 # --- Configuration ---
 load_dotenv()
-# Ensure Ollama is running.
-# e.g., run `ollama run qwen2:1.5b` in your terminal before starting this app.
-OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL_NAME = os.environ.get("OLLAMA_MODEL_NAME", "qwen3:4b") # or "llama3", etc.
 
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
+OPENROUTER_MODEL_NAME = os.environ.get("OPENROUTER_MODEL_NAME", "google/gemini-flash-1.5")
+# Optional headers for OpenRouter analytics
+# OPENROUTER_REFERRER = os.environ.get("YOUR_SITE_URL")
+# OPENROUTER_APP_NAME = os.environ.get("YOUR_APP_NAME")
+
+# Priority 2: Google Gemini (direct)
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-GEMINI_MODEL_NAME = os.environ.get("GEMINI_MODEL_NAME", "gemini-1.5-flash-latest") # gemini-2.5-flash
+GEMINI_MODEL_NAME = os.environ.get("GEMINI_MODEL_NAME", "gemini-1.5-flash-latest")
 
-# --- Data Structures (Pydantic Models) for Structured Output ---
-# These models define the structure for the JSON response we expect from the LLM.
-# Pydantic provides data validation and is the standard way to handle
-# structured data in the Python/LangChain ecosystem.
+# Priority 3: Ollama (Local Fallback)
+OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_MODEL_NAME = os.environ.get("OLLAMA_MODEL_NAME", "qwen2:1.5b")
 
+# --- Data Structures (Pydantic Models) ---
 class VocabularyItem(BaseModel):
     vocabulary: str = Field(description="A related word or phrase in the foreign language")
     translation: str = Field(description="The translation of the vocabulary in the home language")
@@ -63,13 +66,29 @@ class ChatOllama(LLMAbstractModel, Runnable):
 class ChatGemini(LLMAbstractModel, Runnable):
     def __init__(self, api_key: str, model_name: str = GEMINI_MODEL_NAME):
         from langchain_google_genai import ChatGoogleGenerativeAI
-        # FIX: Enable Gemini's native JSON mode to ensure reliable JSON output.
-        # This prevents the model from returning extra fields like "thought"
-        # and is more robust than relying on prompt instructions alone.
         self.model = ChatGoogleGenerativeAI(
             model=model_name,
             google_api_key=api_key,
-            generation_config={"response_mime_type": "application/json"}
+        )
+
+    def invoke(self, prompt: Any, config: Optional[Dict] = None) -> Any:
+        return self.model.invoke(prompt, config=config)
+
+# --- Implementation for OpenRouter using the OpenAI class ---
+class ChatOpenRouter(LLMAbstractModel, Runnable):
+    def __init__(self, api_key: str, model_name: str = OPENROUTER_MODEL_NAME):
+        # This is the robust, recommended way to use OpenRouter with LangChain
+        from langchain_openai import ChatOpenAI
+
+        self.model = ChatOpenAI(
+            model=model_name,
+            openai_api_key=api_key,
+            base_url="https://openrouter.ai/api/v1",
+            # Optional, but recommended for analytics and logging on OpenRouter's end
+            # default_headers={
+            #     "HTTP-Referer": OPENROUTER_REFERRER,
+            #     "X-Title": OPENROUTER_APP_NAME,
+            # }
         )
 
     def invoke(self, prompt: Any, config: Optional[Dict] = None) -> Any:
@@ -102,50 +121,93 @@ def get_language_lesson():
     home_language = "English"
 
     try:
-        if GEMINI_API_KEY:
-            model = ChatGemini(api_key=GEMINI_API_KEY, model_name=GEMINI_MODEL_NAME)
+        # --- Model and Chain Initialization (with provider priority) ---
+        chain = None
+        provider = "N/A"
+        model_name_in_use = "N/A"
+
+        # Priority 1: OpenRouter
+        if OPENROUTER_API_KEY:
+            provider = "OpenRouter"
+            model_name_in_use = OPENROUTER_MODEL_NAME
+            # For OpenAI-compatible endpoints, we use the reliable JsonOutputParser
+            model = ChatOpenRouter(api_key=OPENROUTER_API_KEY, model_name=model_name_in_use).model
+            parser = JsonOutputParser(pydantic_object=LanguageLesson)
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", SYSTEM_PROMPT),
+                ("human", "Generate a language lesson for the word/phrase '{word}' from {home_language} to {foreign_language}."),
+                ("system", "JSON Output Format:\n{format_instructions}")
+            ]).partial(format_instructions=parser.get_format_instructions())
+            chain = prompt | model | parser
+
+        # Priority 2: Google Gemini (direct)
+        elif GEMINI_API_KEY:
+            provider = "Google Gemini"
             model_name_in_use = GEMINI_MODEL_NAME
+            model = ChatGemini(api_key=GEMINI_API_KEY, model_name=model_name_in_use).model
+            # Use the modern .with_structured_output for direct Gemini calls
+            structured_llm = model.with_structured_output(LanguageLesson)
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", SYSTEM_PROMPT),
+                ("human", "Generate a language lesson for the word/phrase '{word}' from {home_language} to {foreign_language}.")
+            ])
+            chain = prompt | structured_llm
+
+        # Priority 3: Ollama (local fallback)
         else:
-            model = ChatOllama(model_name=OLLAMA_MODEL_NAME)
+            provider = "Ollama"
             model_name_in_use = OLLAMA_MODEL_NAME
+            model = ChatOllama(model_name=model_name_in_use).model
+            parser = JsonOutputParser(pydantic_object=LanguageLesson)
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", SYSTEM_PROMPT),
+                ("human", "Generate a language lesson for the word/phrase '{word}' from {home_language} to {foreign_language}."),
+                ("system", "JSON Output Format:\n{format_instructions}")
+            ]).partial(format_instructions=parser.get_format_instructions())
+            chain = prompt | model | parser
 
-        parser = JsonOutputParser(pydantic_object=LanguageLesson)
+        if not chain:
+            return jsonify({"error": "No LLM provider is configured. Please set an API key or ensure Ollama is running."}), 500
 
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", SYSTEM_PROMPT),
-            ("human", "Generate a language lesson for the word/phrase '{word}' from {home_language} to {foreign_language}."),
-            # When using native JSON mode, the format_instructions are still very helpful
-            # to guide the model on the *structure* of the JSON it should create.
-            ("system", "JSON Output Format:\n{format_instructions}")
-        ]).partial(format_instructions=parser.get_format_instructions())
+        print(f"Generating lesson for '{word}' in {foreign_language} using '{model_name_in_use}' via {provider}...")
 
-        chain = prompt | model | parser
-
-        print(f"Generating lesson for '{word}' in {foreign_language} using model '{model_name_in_use}'...")
-
-        lesson = chain.invoke({
+        # --- Invoke Chain and Process Result ---
+        lesson_result = chain.invoke({
             "word": word,
             "home_language": home_language,
             "foreign_language": foreign_language
         })
 
+        # The result might be a Pydantic model (from Gemini) or a dict (from parsers)
+        if isinstance(lesson_result, BaseModel):
+            lesson = lesson_result.model_dump()
+        else:
+            lesson = lesson_result
+
         return jsonify(lesson), 200
 
     except Exception as e:
         print(f"[ERROR] Failed to generate lesson: {e}")
-        model_name_in_use = GEMINI_MODEL_NAME if GEMINI_API_KEY else OLLAMA_MODEL_NAME
-        provider = "Google Gemini" if GEMINI_API_KEY else "Ollama"
         error_message = (
-            f"Failed to generate lesson with {provider}. "
-            f"Please ensure the service is available and the model '{model_name_in_use}' is configured correctly. Error: {e}"
+            f"Failed to generate lesson with {provider} "
+            f"using model '{model_name_in_use}'. Please check your API keys and model configuration. Error: {e}"
         )
         return jsonify({"error": error_message}), 500
 
 if __name__ == '__main__':
-    model_in_use = GEMINI_MODEL_NAME if GEMINI_API_KEY else OLLAMA_MODEL_NAME
-    provider = "Google Gemini" if GEMINI_API_KEY else f"Ollama via {OLLAMA_BASE_URL}"
+    # Determine which provider will be used on startup for clear logging
+    provider_in_use = "Ollama"
+    model_in_use = OLLAMA_MODEL_NAME
+    if OPENROUTER_API_KEY:
+        provider_in_use = f"OpenRouter (via OpenAI SDK)"
+        model_in_use = OPENROUTER_MODEL_NAME
+    elif GEMINI_API_KEY:
+        provider_in_use = "Google Gemini"
+        model_in_use = GEMINI_MODEL_NAME
+
     print("--- Language Context Engine API ---")
-    print(f"Using model: {model_in_use} from {provider}")
-    if not GEMINI_API_KEY:
-        print("GEMINI_API_KEY not found, falling back to Ollama.")
+    print(f"Using model: {model_in_use} from {provider_in_use}")
+    if provider_in_use == "Ollama":
+        print("No cloud provider API key found. Falling back to local Ollama.")
+
     app.run(host='0.0.0.0', port=5001, debug=True)
