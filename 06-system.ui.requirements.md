@@ -1,0 +1,8 @@
+- Single-page web app for a language learning service.
+- UI is simple and elegant.
+- Starts with a input box for the user to enter a word or simple phrase.
+- Once submitted, the app displays a series of flash cards with the following information:
+  - A direct translation of the word or phrase.
+  - Related vocabulary.
+  - Practical usage examples in sentences.
+  - An advanced content section with a more complex explanation or context.
