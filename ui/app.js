@@ -15,7 +15,7 @@ document.getElementById('language-form').addEventListener('submit', async (event
     submitButton.textContent = 'Loading...';
 
     try {
-        const response = await fetch('http://localhost:5001/api/lesson', {
+        const response = await fetch('http://192.168.0.8:5001/api/lesson', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ word, foreignLanguage })
@@ -97,12 +97,20 @@ function loadFlashcards(lesson) {
     ];
 
     // Create and append all flashcard elements to the DOM
-    cardsData.forEach(cardInfo => {
-        if (cardInfo.content) {
-            const flashcardEl = createFlashcard(cardInfo.title, cardInfo.content);
-            flashcardContainer.appendChild(flashcardEl);
-        }
-    });
+    const cardElements = cardsData
+        .filter(cardInfo => cardInfo.content)
+        .map(cardInfo => createFlashcard(cardInfo.title, cardInfo.content));
+
+    cardElements.forEach(cardEl => flashcardContainer.appendChild(cardEl));
+
+    // To fix the final card getting "stuck" at the bottom, we add extra
+    // scrollable space. A padding value of ~80% of the viewport height gives
+    // enough "runway" for the last card to scroll completely out of view.
+    if (cardElements.length > 1) {
+        flashcardContainer.style.paddingBottom = '80vh';
+    } else {
+        flashcardContainer.style.paddingBottom = '0';
+    }
 
     // Set up the scroll-triggered animation for the newly created cards
     setupScrollAnimation();
@@ -115,12 +123,16 @@ function loadFlashcards(lesson) {
 function setupScrollAnimation() {
     const flashcards = document.querySelectorAll('.flashcard');
 
+    // The first card is visible by default, so we don't need to observe it.
+    // This also prevents a "flash" if the observer fires slightly late.
+    if (flashcards.length > 0) {
+        flashcards[0].classList.add('visible');
+    }
+
     const observerOptions = {
         root: null, // Use the viewport as the root
         rootMargin: '0px',
         // Trigger the animation when a card is 50% visible.
-        // This provides a nice effect where the card is well into view
-        // before it animates.
         threshold: 0.5
     };
 
@@ -130,15 +142,15 @@ function setupScrollAnimation() {
             if (entry.isIntersecting) {
                 entry.target.classList.add('visible');
                 // Once a card is visible, we don't need to observe it anymore.
-                // This ensures the animation only runs once per card, and subsequent
-                // scrolling up and down will not re-trigger the animation.
                 observer.unobserve(entry.target);
             }
         });
     }, observerOptions);
 
-    // Start observing each flashcard.
-    flashcards.forEach(card => {
-        observer.observe(card);
+    // Start observing each flashcard, skipping the first one.
+    flashcards.forEach((card, index) => {
+        if (index > 0) {
+            observer.observe(card);
+        }
     });
 }

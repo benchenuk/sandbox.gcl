@@ -1,6 +1,6 @@
 body {
     font-family: Arial, sans-serif;
-    background-color: #f5f5f5;
+    background-color: #f0f2f5; /* Update to a lighter background */
 }
 
 .container {
@@ -28,14 +28,14 @@ input, select {
 
 button {
     padding: 0.5rem 1rem;
-    background-color: #007bff;
+    background-color: #007aff; /* Maintain harmony with button color */
     color: white;
     border: none;
     cursor: pointer;
 }
 
 button:hover {
-    background-color: #0056b3;
+    background-color: #005ecb; /* Slightly darker shade on hover */
 }
 
 #flashcard-container {
@@ -44,18 +44,26 @@ button:hover {
 }
 
 .flashcard {
-    background-color: white;
-    padding: 2rem;
+    background-color: #ffffff; /* Updated card color to light */
+    padding: 1.5rem;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .flashcard h2 {
     margin-top: 0;
+    color: #333; /* Maintain harmony with other text */
 }
 
 .flashcard section {
     margin-bottom: 1rem;
+}
+
+.foreign-language-text {
+    background-color: #d1e7ff; /* Light blue for foreign language highlight */
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-weight: bold; /* Bold for foreign language */
 }
 
 .flashcard p {

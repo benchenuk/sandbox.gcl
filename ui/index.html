@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Language Learning Flashcards</title>
+    <title>Learn Language with Feiyu</title>
     <link rel="stylesheet" href="./styles.css">
     <style>
         body {
@@ -34,15 +34,19 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
-        form input, form select, form button {
+        form input {
+            flex-grow: 1;
             padding: 10px 15px;
             border: 1px solid #ccc;
             border-radius: 8px;
             font-size: 1rem;
         }
 
-        form input {
-            flex-grow: 1;
+        form select, form button {
+            padding: 10px 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
         }
 
         form button {
@@ -63,7 +67,6 @@
         }
 
         #flashcard-container {
-            /* This container allows for the sticky positioning of cards within it */
             perspective: 1000px; /* Adds depth for 3D transforms */
         }
 
@@ -73,25 +76,19 @@
             padding: 30px;
             margin-bottom: 20px;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-
-            /* --- Animation & Stacking --- */
             position: sticky;
             top: 20px; /* Stick to the top of the viewport as user scrolls */
             min-height: 60vh; /* Give card height to make sticky effect noticeable */
-
-            /* Initial state for animations (for all cards except the first) */
             opacity: 0;
             transform: translateY(50px) rotateX(-30deg);
             transition: opacity 0.8s ease-out, transform 0.8s ease-out;
         }
 
-        /* The first card is visible by default, no initial transform needed */
         .flashcard:first-child {
             opacity: 1;
             transform: none;
         }
 
-        /* The state when a card scrolls into view */
         .flashcard.visible {
             opacity: 1;
             transform: translateY(0) rotateX(0deg);
@@ -107,19 +104,18 @@
 
         .flashcard p {
             line-height: 1.6;
-            font-size: 1.1rem;
+            font-size: 1.2rem; /* Increased card content font size */
         }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>Language Learning Flashcards</h1>
+    <h1>Learn Language with Feiyu</h1>
     <form id="language-form">
         <input type="text" id="word-input" placeholder="Enter a word or phrase">
         <select id="foreign-language-select">
             <option value="Japanese">Japanese</option>
             <option value="French">French</option>
-            <!-- Add more languages as needed -->
         </select>
         <button type="submit">Submit</button>
     </form>
