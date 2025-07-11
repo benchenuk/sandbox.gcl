@@ -69,3 +69,33 @@ button:hover {
 .flashcard p {
     margin: 0.5rem 0;
 }
+
+/* Media queries for responsiveness */
+@media (max-width: 600px) {
+    .container {
+        padding: 1rem;
+    }
+
+    h1 {
+        font-size: 1.5rem; /* Slightly smaller header on small screens */
+    }
+
+    form {
+        flex-direction: column;
+        gap: 10px; /* Add some space between form elements */
+    }
+
+    input, select {
+        width: 100%;
+        max-width: 100%; /* Ensure input fields do not exceed container width */
+    }
+
+    button {
+        width: 100%; /* Make the button full width */
+    }
+}
+
+/* Additional styles for form elements */
+form input {
+    max-width: calc(100% - 32px); /* Adjust this value to ensure proper fit */
+}
