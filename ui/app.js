@@ -9,77 +9,136 @@ document.getElementById('language-form').addEventListener('submit', async (event
         return;
     }
 
-    const response = await fetch('http://localhost:5001/api/lesson', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ word, foreignLanguage })
-    });
+    // Add a loading state for better UX
+    const submitButton = event.target.querySelector('button');
+    submitButton.disabled = true;
+    submitButton.textContent = 'Loading...';
 
-    const data = await response.json();
+    try {
+        const response = await fetch('http://localhost:5001/api/lesson', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ word, foreignLanguage })
+        });
 
-    if (response.ok) {
-        displayFlashcards(data);
-    } else {
-        alert(`Error: ${data.error}`);
+        const data = await response.json();
+
+        if (response.ok) {
+            loadFlashcards(data);
+        } else {
+            alert(`Error: ${data.error}`);
+        }
+    } catch (error) {
+        console.error('Failed to fetch lesson:', error);
+        alert('An error occurred while fetching the lesson. Please check the console.');
+    } finally {
+        // Restore button state
+        submitButton.disabled = false;
+        submitButton.textContent = 'Submit';
     }
 });
 
-function displayFlashcards(lesson) {
-    const flashcardContainer = document.getElementById('flashcard-container');
-    flashcardContainer.innerHTML = ''; // Clear previous content
-
+/**
+ * Creates a single flashcard element with a title and content.
+ * Content can be a simple string or an array of objects to be formatted.
+ * @param {string} title - The title of the flashcard.
+ * @param {string|Array<Object>|Object} content - The content for the flashcard.
+ * @returns {HTMLDivElement} The created flashcard element.
+ */
+function createFlashcard(title, content) {
     const flashcardDiv = document.createElement('div');
     flashcardDiv.className = 'flashcard';
 
-    // Direct Translation
-    const directTranslation = document.createElement('section');
-    const directTransTitle = document.createElement('h2');
-    directTransTitle.textContent = 'Direct Translation';
-    const directTranslationText = document.createElement('p');
-    directTranslationText.textContent = lesson.directTranslation;
-    directTranslation.appendChild(directTransTitle);
-    directTranslation.appendChild(directTranslationText);
+    const titleElement = document.createElement('h2');
+    titleElement.textContent = title;
+    flashcardDiv.appendChild(titleElement);
 
-    // Related Vocabulary
-    const relatedVocab = document.createElement('section');
-    const vocabTitle = document.createElement('h2');
-    vocabTitle.textContent = 'Related Vocabulary';
-    lesson.relatedVocabulary.forEach(item => {
-        const vocabItem = document.createElement('p');
-        vocabItem.textContent = `${item.vocabulary} - ${item.translation}`;
-        relatedVocab.appendChild(vocabItem);
+    if (typeof content === 'string') {
+        const contentElement = document.createElement('p');
+        contentElement.textContent = content;
+        flashcardDiv.appendChild(contentElement);
+    } else if (Array.isArray(content)) {
+        content.forEach(item => {
+            const p = document.createElement('p');
+            // Handles both {vocabulary, translation} and {usage, translation} structures
+            const mainText = item.vocabulary || item.usage;
+            p.textContent = `${mainText} - ${item.translation}`;
+            flashcardDiv.appendChild(p);
+        });
+    } else if (typeof content === 'object' && content !== null) {
+        // Handle advancedContent
+        const contentText = document.createElement('p');
+        contentText.textContent = content.content;
+        const explanationText = document.createElement('p');
+        explanationText.style.fontStyle = 'italic'; // Differentiate explanation
+        explanationText.textContent = content.explanation;
+        flashcardDiv.appendChild(contentText);
+        flashcardDiv.appendChild(explanationText);
+    }
+
+    return flashcardDiv;
+}
+
+/**
+ * Clears existing flashcards and loads new ones based on the lesson data.
+ * Sets up an IntersectionObserver to animate cards as they scroll into view.
+ * @param {object} lesson - The lesson data from the API.
+ */
+function loadFlashcards(lesson) {
+    const flashcardContainer = document.getElementById('flashcard-container');
+    flashcardContainer.innerHTML = ''; // Clear previous content
+
+    // Define the order and content of the cards
+    const cardsData = [
+        { title: 'Direct Translation', content: lesson.directTranslation },
+        { title: 'Related Vocabulary', content: lesson.relatedVocabulary },
+        { title: 'Practical Usage', content: lesson.practicalUsage },
+        { title: 'Advanced Content', content: lesson.advancedContent }
+    ];
+
+    // Create and append all flashcard elements to the DOM
+    cardsData.forEach(cardInfo => {
+        if (cardInfo.content) {
+            const flashcardEl = createFlashcard(cardInfo.title, cardInfo.content);
+            flashcardContainer.appendChild(flashcardEl);
+        }
     });
-    relatedVocab.insertBefore(vocabTitle, relatedVocab.firstChild);
 
-    // Practical Usage
-    const practicalUsage = document.createElement('section');
-    const usageTitle = document.createElement('h2');
-    usageTitle.textContent = 'Practical Usage';
-    lesson.practicalUsage.forEach(item => {
-        const usageItem = document.createElement('p');
-        usageItem.textContent = `${item.usage} - ${item.translation}`;
-        practicalUsage.appendChild(usageItem);
+    // Set up the scroll-triggered animation for the newly created cards
+    setupScrollAnimation();
+}
+
+/**
+ * Initializes an IntersectionObserver to add a 'visible' class to flashcards
+ * when they enter the viewport, triggering a one-time animation.
+ */
+function setupScrollAnimation() {
+    const flashcards = document.querySelectorAll('.flashcard');
+
+    const observerOptions = {
+        root: null, // Use the viewport as the root
+        rootMargin: '0px',
+        // Trigger the animation when a card is 50% visible.
+        // This provides a nice effect where the card is well into view
+        // before it animates.
+        threshold: 0.5
+    };
+
+    const observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            // If the card is intersecting the viewport, make it visible.
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                // Once a card is visible, we don't need to observe it anymore.
+                // This ensures the animation only runs once per card, and subsequent
+                // scrolling up and down will not re-trigger the animation.
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    // Start observing each flashcard.
+    flashcards.forEach(card => {
+        observer.observe(card);
     });
-    practicalUsage.insertBefore(usageTitle, practicalUsage.firstChild);
-
-    // Advanced Content
-    const advancedContent = document.createElement('section');
-    const advTitle = document.createElement('h2');
-    advTitle.textContent = 'Advanced Content';
-    const advContentText = document.createElement('p');
-    advContentText.textContent = lesson.advancedContent.content;
-    const advExplanation = document.createElement('p');
-    advExplanation.textContent = lesson.advancedContent.explanation;
-    advancedContent.appendChild(advTitle);
-    advancedContent.appendChild(advContentText);
-    advancedContent.appendChild(advExplanation);
-
-    // Append all sections to the flashcard div
-    flashcardDiv.appendChild(directTranslation);
-    flashcardDiv.appendChild(relatedVocab);
-    flashcardDiv.appendChild(practicalUsage);
-    flashcardDiv.appendChild(advancedContent);
-
-    // Append the flashcard div to the container
-    flashcardContainer.appendChild(flashcardDiv);
 }
