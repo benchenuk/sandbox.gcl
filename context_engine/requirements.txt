@@ -1,0 +1,7 @@
+# requirements.txt
+
+Flask
+langchain
+langchain-ollama
+langchain-core
+pydantic
