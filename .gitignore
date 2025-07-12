@@ -1,0 +1,10 @@
+.aider*
+.continue
+.env
+.gradle
+.idea
+.vscode
+build/
+gradle/
+gradlew
+gradlew.bat
