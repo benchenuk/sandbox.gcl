@@ -1,7 +1,19 @@
 # requirements.txt
 
+# Core web framework
 Flask
+Flask-Cors
+
+# Production WSGI server
+gunicorn
+
+# Core LangChain and data validation
 langchain
-langchain-ollama
 langchain-core
 pydantic
+python-dotenv
+
+# LLM Provider Libraries
+langchain-ollama
+langchain-google-genai
+langchain-openai

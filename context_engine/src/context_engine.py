@@ -7,8 +7,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
-from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.runnables import Runnable
+from pydantic import BaseModel, Field
 from typing import List, Any, Optional, Dict
 
 # --- Configuration ---

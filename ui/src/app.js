@@ -1,3 +1,5 @@
+const config = require('./config');
+
 document.getElementById('language-form').addEventListener('submit', async (event) => {
     event.preventDefault();
 
@@ -15,7 +17,7 @@ document.getElementById('language-form').addEventListener('submit', async (event
     submitButton.textContent = 'Loading...';
 
     try {
-        const response = await fetch('http://192.168.0.8:5001/api/lesson', {
+        const response = await fetch(config.urlContextEngine, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ word, foreignLanguage })
