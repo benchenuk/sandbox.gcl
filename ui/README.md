@@ -11,7 +11,7 @@
   npm run start
 ```
 
-# Deployment #
+## Deployment ##
 ```shell
   # install as static server
   npm install -g serve
