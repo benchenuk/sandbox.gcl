@@ -26,7 +26,7 @@ GEMINI_MODEL_NAME = os.environ.get("GEMINI_MODEL_NAME", "gemini-1.5-flash-latest
 
 # Priority 3: Ollama (Local Fallback)
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL_NAME = os.environ.get("OLLAMA_MODEL_NAME", "qwen2:1.5b")
+OLLAMA_MODEL_NAME = os.environ.get("OLLAMA_MODEL_NAME", "gemma3:4b-it-qat")
 
 # --- Data Structures (Pydantic Models) ---
 class VocabularyItem(BaseModel):
@@ -103,7 +103,9 @@ SYSTEM_PROMPT = """
 You are an expert language tutor. Your task is to generate a comprehensive language lesson based on user input.
 The user will provide a word or phrase, in their home language, and a target foreign language.
 You MUST respond with a single, valid JSON object that strictly adheres to the schema provided.
-Do NOT add any commentary, markdown, or any text outside of the JSON object.
+Do NOT add any commentary, markdown, or any text outside of the JSON object. 
+For Japanese:
+- Always include pronunciation using Romaji.
 """
 
 @app.route('/api/lesson', methods=['POST'])
