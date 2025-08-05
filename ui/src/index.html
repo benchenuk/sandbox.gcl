@@ -107,6 +107,37 @@
             line-height: 1.6;
             font-size: 1.2rem; /* Increased card content font size */
         }
+
+        #load-more-container {
+            margin: 20px 0;
+            text-align: center;
+            display: none;
+        }
+
+        #load-more-btn {
+            background-color: #007aff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        #load-more-btn:hover {
+            background-color: #005ecb;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        #load-more-btn:disabled {
+            background-color: #999;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -123,6 +154,9 @@
 
     <div id="flashcard-container">
         <!-- Flashcards will be dynamically inserted here -->
+    </div>
+    <div id="load-more-container">
+        <button id="load-more-btn">Load More</button>
     </div>
 </div>
 

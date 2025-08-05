@@ -102,3 +102,27 @@ button:hover {
 form input {
     max-width: calc(100% - 32px); /* Adjust this value to ensure proper fit */
 }
+
+#load-more-container {
+    position: sticky;
+    bottom: 0;
+    background-color: #f0f2f5; /* Match body background color */
+    padding: 1rem 0;
+    margin: 0;
+    text-align: center;
+    /* Add subtle shadow to separate from cards */
+    box-shadow: 0 -4px 6px -6px rgba(0, 0, 0, 0.1);
+    z-index: 1; /* Ensure button stays above cards */
+}
+
+#flashcard-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding-bottom: 1rem; /* Add some space after last card */
+}
+
+/* Add padding to last card to prevent button overlap */
+.flashcard:last-of-type {
+    margin-bottom: 4rem;
+}
