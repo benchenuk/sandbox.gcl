@@ -168,27 +168,33 @@ body {
     padding-bottom: 0;
 }
 
-.item-translation,
-.item-explanation {
+.item-translation {
     color: var(--text-secondary);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     margin-top: 0.5rem !important;
 }
 
 .item-explanation {
+    background-color: #f8f9fa;
+    border-left: 4px solid var(--primary-blue);
+    padding: 1rem;
+    margin-top: 1rem !important;
+    font-size: 0.9rem;
     font-style: italic;
+    color: var(--text-secondary);
+    border-radius: 0 8px 8px 0;
 }
 
 /* --- 7. Japanese Block Styling --- */
 .japanese-block {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.1rem; /* Tighten the gap between main text and romaji */
     margin: 0.5rem 0;
 }
 
 .line-main {
-    font-size: 1.6rem;
+    font-size: 1.8rem; /* Increased font size for main content */
     font-weight: 500;
     line-height: 1.8; /* Increased for ruby text */
 }
@@ -204,17 +210,17 @@ body {
 }
 
 .line-romaji {
-    font-size: 1rem;
+    font-size: 0.8rem; /* Decreased font size for pronunciation */
     color: var(--primary-blue);
     font-style: italic;
 }
 
 .line-translation {
-    font-size: 1rem;
+    font-size: 0.95rem; /* Slightly smaller for better balance */
     color: var(--text-secondary);
     border-top: 1px dashed var(--border-color);
-    padding-top: 0.75rem;
-    margin-top: 0.75rem !important;
+    padding-top: 0.8rem; /* Make padding equal to margin for centering */
+    margin-top: 0.8rem !important;
 }
 
 /* --- 8. Load More Button --- */

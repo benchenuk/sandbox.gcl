@@ -118,7 +118,7 @@ function appendCardContent(body, content, type) {
                     } else if (typeof mainContent === 'object' && mainContent !== null) {
                         itemWrapper.appendChild(createJapaneseBlock(mainContent));
                         const explanation = document.createElement('p');
-                        explanation.className = 'item-translation';
+                        explanation.className = 'item-explanation';
                         explanation.textContent = item.translation;
                         itemWrapper.appendChild(explanation);
                     }
@@ -138,7 +138,7 @@ function appendCardContent(body, content, type) {
                     body.appendChild(createJapaneseBlock(mainContent));
                 }
                 const explanation = document.createElement('p');
-                explanation.className = 'item-explanation';
+                explanation.className = 'item-explanation'; // Ensuring "Note" style is applied
                 explanation.textContent = content.explanation;
                 body.appendChild(explanation);
             }
