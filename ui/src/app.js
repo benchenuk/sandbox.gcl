@@ -1,101 +1,75 @@
 const config = require('./config');
 
-// Store the current word and language for loading more content
 let currentWord = '';
 let currentLanguage = '';
 
-document.getElementById('language-form').addEventListener('submit', async (event) => {
-    event.preventDefault();
+/**
+ * A mapping of card types to their corresponding icon and title for tooltips.
+ */
+const cardIconMapping = {
+    'Direct Translation': { icon: '⇄', title: 'Direct Translation' },
+    'Related Vocabulary': { icon: '🏷️', title: 'Related Vocabulary' },
+    'Practical Usage': { icon: '💬', title: 'Practical Usage' },
+    'Advanced Content': { icon: '📖', title: 'Advanced Content' }
+};
 
-    currentWord = document.getElementById('word-input').value;
-    currentLanguage = document.getElementById('foreign-language-select').value;
-
-    if (!currentWord || !currentLanguage) {
-        alert('Please enter both a word and select a foreign language.');
-        return;
-    }
-
-    // Add a loading state for better UX
-    const submitButton = event.target.querySelector('button');
-    submitButton.disabled = true;
-    submitButton.textContent = 'Loading...';
-
+/**
+ * Reusable function to fetch lesson data from the backend.
+ * @param {string} word The word to get a lesson for.
+ * @param {string} language The target language.
+ * @returns {Promise<object>} The lesson data as a JSON object.
+ */
+async function fetchLessonData(word, language) {
     try {
         const response = await fetch(config.urlContextEngine, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ word: currentWord, foreignLanguage: currentLanguage })
+            body: JSON.stringify({ word, foreignLanguage: language })
         });
 
         const data = await response.json();
 
         if (response.ok) {
-            loadFlashcards(data, true); // true means it's the initial load
+            return data;
         } else {
-            alert(`Error: ${data.error}`);
+            throw new Error(data.error || 'An unknown error occurred.');
         }
     } catch (error) {
-        console.error('Failed to fetch lesson:', error);
-        alert('An error occurred while fetching the lesson. Please check the console.');
-    } finally {
-        // Restore button state
-        submitButton.disabled = false;
-        submitButton.textContent = 'Submit';
+        console.error('Failed to fetch lesson data:', error);
+        alert(`An error occurred: ${error.message}`);
+        throw error; // Re-throw to be caught by the caller
     }
-});
+}
 
-// Add event listener for the Load More button
-document.getElementById('load-more-btn').addEventListener('click', async () => {
-    if (!currentWord || !currentLanguage) {
-        return;
-    }
-
-    const loadMoreBtn = document.getElementById('load-more-btn');
-    loadMoreBtn.disabled = true;
-    loadMoreBtn.textContent = 'Loading...';
-
-    try {
-        const response = await fetch(config.urlContextEngine, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ word: currentWord, foreignLanguage: currentLanguage })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            loadFlashcards(data, false); // false means it's an extension
-        } else {
-            alert(`Error: ${data.error}`);
-        }
-    } catch (error) {
-        console.error('Failed to fetch additional content:', error);
-        alert('An error occurred while fetching additional content. Please check the console.');
-    } finally {
-        loadMoreBtn.disabled = false;
-        loadMoreBtn.textContent = 'Load More';
-    }
-});
+/**
+ * Parses a string with Furigana and converts it to HTML <ruby> elements.
+ * e.g., "日本語(にほんご)" -> "<ruby>日本語<rt>にほんご</rt></ruby>"
+ * @param {string} text - The text containing Furigana in parentheses.
+ * @returns {string} The HTML string with <ruby> tags.
+ */
+function parseFurigana(text) {
+    if (!text) return '';
+    // Regex to find Kanji followed by Furigana in parentheses
+    const furiganaRegex = /([\u4e00-\u9faf]+)\(([\u3040-\u309f]+)\)/g;
+    return text.replace(furiganaRegex, '<ruby>$1<rt>$2</rt></ruby>');
+}
 
 /**
  * Creates a special HTML block for structured Japanese content.
- * @param {object} data - The Japanese content object {lm, lrb, lrm, lt}.
+ * @param {object} data - The Japanese content object {lm, lrm, lt}.
  * @returns {HTMLDivElement} The created DOM element for the block.
  */
 function createJapaneseBlock(data) {
     const block = document.createElement('div');
     block.className = 'japanese-block';
 
-    const ruby = document.createElement('p');
-    ruby.className = 'line-ruby';
-    ruby.textContent = data.lrb;
-    block.appendChild(ruby);
-
+    // The main line now uses <ruby> tags for Furigana, parsed from the 'lm' field
     const main = document.createElement('p');
     main.className = 'line-main';
-    main.textContent = data.lm;
+    main.innerHTML = parseFurigana(data.lm); // Use innerHTML to render the ruby tags
     block.appendChild(main);
 
+    // Romaji and Translation remain the same
     const romaji = document.createElement('p');
     romaji.className = 'line-romaji';
     romaji.textContent = data.lrm;
@@ -110,72 +84,101 @@ function createJapaneseBlock(data) {
 }
 
 /**
- * Creates a single flashcard element with a title and content.
- * Content can be a simple string or an array of objects to be formatted.
- * @param {string} title - The title of the flashcard.
- * @param {string|Array<Object>|Object} content - The content for the flashcard.
+ * Appends the specific content for a card type to the card's body.
+ * @param {HTMLElement} body - The flashcard body element.
+ * @param {any} content - The content data for the card.
+ * @param {string} type - The type of the card (e.g., 'Related Vocabulary').
+ */
+function appendCardContent(body, content, type) {
+    if (!content) return;
+
+    switch (type) {
+        case 'Direct Translation':
+            if (typeof content === 'string') {
+                const p = document.createElement('p');
+                p.textContent = content;
+                body.appendChild(p);
+            } else if (typeof content === 'object') {
+                body.appendChild(createJapaneseBlock(content));
+            }
+            break;
+
+        case 'Related Vocabulary':
+        case 'Practical Usage':
+            if (Array.isArray(content)) {
+                content.forEach(item => {
+                    const itemWrapper = document.createElement('div');
+                    itemWrapper.className = 'list-item';
+
+                    const mainContent = item.vocabulary || item.usage;
+                    if (typeof mainContent === 'string') {
+                        const p = document.createElement('p');
+                        p.textContent = `${mainContent} - ${item.translation}`;
+                        itemWrapper.appendChild(p);
+                    } else if (typeof mainContent === 'object' && mainContent !== null) {
+                        itemWrapper.appendChild(createJapaneseBlock(mainContent));
+                        const explanation = document.createElement('p');
+                        explanation.className = 'item-translation';
+                        explanation.textContent = item.translation;
+                        itemWrapper.appendChild(explanation);
+                    }
+                    body.appendChild(itemWrapper);
+                });
+            }
+            break;
+
+        case 'Advanced Content':
+            if (typeof content === 'object' && content !== null) {
+                const mainContent = content.content;
+                if (typeof mainContent === 'string') {
+                    const p = document.createElement('p');
+                    p.textContent = mainContent;
+                    body.appendChild(p);
+                } else if (typeof mainContent === 'object' && mainContent !== null) {
+                    body.appendChild(createJapaneseBlock(mainContent));
+                }
+                const explanation = document.createElement('p');
+                explanation.className = 'item-explanation';
+                explanation.textContent = content.explanation;
+                body.appendChild(explanation);
+            }
+            break;
+    }
+}
+
+/**
+ * Creates a single flashcard element with an icon header and formatted content.
+ * @param {object} cardInfo - An object containing card { type, content, isExtended }.
  * @returns {HTMLDivElement} The created flashcard element.
  */
-function createFlashcard(title, content) {
+function createFlashcard(cardInfo) {
+    const { type, content, isExtended } = cardInfo;
     const flashcardDiv = document.createElement('div');
     flashcardDiv.className = 'flashcard';
 
-    const titleElement = document.createElement('h2');
-    titleElement.textContent = title;
-    flashcardDiv.appendChild(titleElement);
+    // 1. Create Header with Icon
+    const header = document.createElement('div');
+    header.className = 'flashcard-header';
 
-    // Direct Translation
-    if (title.startsWith('Direct Translation')) {
-        if (typeof content === 'string') {
-            const p = document.createElement('p');
-            p.textContent = content;
-            flashcardDiv.appendChild(p);
-        } else if (typeof content === 'object' && content !== null) {
-            flashcardDiv.appendChild(createJapaneseBlock(content));
-        }
+    const iconContainer = document.createElement('div');
+    iconContainer.className = 'card-icon-container';
+
+    const iconData = cardIconMapping[type];
+    if (iconData) {
+        iconContainer.textContent = iconData.icon;
+        // Add tooltip for accessibility
+        const tooltipTitle = isExtended ? `${iconData.title} (Extended)` : iconData.title;
+        iconContainer.setAttribute('title', tooltipTitle);
     }
-    // Related Vocabulary or Practical Usage
-    else if (title.startsWith('Related Vocabulary') || title.startsWith('Practical Usage')) {
-        if (Array.isArray(content)) {
-            content.forEach(item => {
-                const mainContent = item.vocabulary || item.usage;
-                if (typeof mainContent === 'string') {
-                    const p = document.createElement('p');
-                    p.textContent = `${mainContent} - ${item.translation}`;
-                    flashcardDiv.appendChild(p);
-                } else if (typeof mainContent === 'object' && mainContent !== null) {
-                    flashcardDiv.appendChild(createJapaneseBlock(mainContent));
-                    const explanation = document.createElement('p');
-                    explanation.textContent = item.translation; // Explanation below the block
-                    flashcardDiv.appendChild(explanation);
-                }
-            });
-        }
-    }
-    // Advanced Content
-    else if (title.startsWith('Advanced Content')) {
-        if (typeof content === 'object' && content !== null) {
-            const mainContent = content.content;
-            if (typeof mainContent === 'string') {
-                const p = document.createElement('p');
-                p.textContent = mainContent;
-                flashcardDiv.appendChild(p);
-            } else if (typeof mainContent === 'object' && mainContent !== null) {
-                flashcardDiv.appendChild(createJapaneseBlock(mainContent));
-            }
-            // Add the explanation below
-            const explanation = document.createElement('p');
-            explanation.style.fontStyle = 'italic';
-            explanation.textContent = content.explanation;
-            flashcardDiv.appendChild(explanation);
-        }
-    }
-    // Fallback for any other string content
-    else if (typeof content === 'string') {
-        const p = document.createElement('p');
-        p.textContent = content;
-        flashcardDiv.appendChild(p);
-    }
+
+    header.appendChild(iconContainer);
+    flashcardDiv.appendChild(header);
+
+    // 2. Create Content Body
+    const body = document.createElement('div');
+    body.className = 'flashcard-body';
+    appendCardContent(body, content, type);
+    flashcardDiv.appendChild(body);
 
     return flashcardDiv;
 }
@@ -189,51 +192,39 @@ function createFlashcard(title, content) {
  */
 function loadFlashcards(lesson, isInitialLoad) {
     const flashcardContainer = document.getElementById('flashcard-container');
-    
+
     // For initial load, clear previous content
     if (isInitialLoad) {
         flashcardContainer.innerHTML = '';
     }
 
     // Define the order and content of the cards
-    // For extensions, we skip the direct translation as it would be repetitive
-    const cardsData = isInitialLoad 
-        ? [
-            { title: 'Direct Translation', content: lesson.directTranslation },
-            { title: 'Related Vocabulary', content: lesson.relatedVocabulary },
-            { title: 'Practical Usage', content: lesson.practicalUsage },
-            { title: 'Advanced Content', content: lesson.advancedContent }
+    const cardsData = isInitialLoad ?
+        [
+            { type: 'Direct Translation', content: lesson.directTranslation },
+            { type: 'Related Vocabulary', content: lesson.relatedVocabulary },
+            { type: 'Practical Usage', content: lesson.practicalUsage },
+            { type: 'Advanced Content', content: lesson.advancedContent }
         ]
         : [
-            { title: 'Related Vocabulary (Extended)', content: lesson.relatedVocabulary },
-            { title: 'Practical Usage (Extended)', content: lesson.practicalUsage },
-            { title: 'Advanced Content (Extended)', content: lesson.advancedContent }
+            { type: 'Related Vocabulary', content: lesson.relatedVocabulary, isExtended: true },
+            { type: 'Practical Usage', content: lesson.practicalUsage, isExtended: true },
+            { type: 'Advanced Content', content: lesson.advancedContent, isExtended: true }
         ];
 
     // Create and append all flashcard elements to the DOM
     const cardElements = cardsData
         .filter(cardInfo => cardInfo.content)
-        .map(cardInfo => createFlashcard(cardInfo.title, cardInfo.content));
+        .map(cardInfo => createFlashcard(cardInfo));
 
     cardElements.forEach(cardEl => flashcardContainer.appendChild(cardEl));
 
     // Show the load more button after initial load
-    if (isInitialLoad) {
+    if (isInitialLoad && cardElements.length > 0) {
         const loadMoreContainer = document.getElementById('load-more-container');
-        // Remove it from its current location and append it to flashcard container
         loadMoreContainer.remove();
         flashcardContainer.appendChild(loadMoreContainer);
         loadMoreContainer.style.display = 'block';
-    }
-
-    // To fix the final card getting "stuck" at the bottom, we add extra
-    // scrollable space. A padding value of ~80% of the viewport height gives
-    // enough "runway" for the last card to scroll completely out of view.
-    const allCards = flashcardContainer.querySelectorAll('.flashcard');
-    if (allCards.length > 1) {
-        flashcardContainer.style.paddingBottom = '2rem';
-    } else {
-        flashcardContainer.style.paddingBottom = '0';
     }
 
     // Set up the scroll-triggered animation for the newly created cards
@@ -283,3 +274,51 @@ function setupScrollAnimation() {
         }
     });
 }
+
+// --- Event Listeners ---
+
+document.getElementById('language-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    currentWord = document.getElementById('word-input').value;
+    currentLanguage = document.getElementById('foreign-language-select').value;
+
+    if (!currentWord || !currentLanguage) {
+        alert('Please enter a word and select a language.');
+        return;
+    }
+
+    const submitButton = event.target.querySelector('button');
+    submitButton.disabled = true;
+    submitButton.textContent = 'Generating...';
+
+    try {
+        const data = await fetchLessonData(currentWord, currentLanguage);
+        loadFlashcards(data, true); // true for initial load
+    } catch (error) {
+        // Error is already alerted in fetchLessonData
+    } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Generate';
+    }
+});
+
+document.getElementById('load-more-btn').addEventListener('click', async () => {
+    if (!currentWord || !currentLanguage) {
+        return;
+    }
+
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    loadMoreBtn.disabled = true;
+    loadMoreBtn.textContent = 'Loading...';
+
+    try {
+        const data = await fetchLessonData(currentWord, currentLanguage);
+        loadFlashcards(data, false); // false for extension
+    } catch (error) {
+        // Error is already alerted in fetchLessonData
+    } finally {
+        loadMoreBtn.disabled = false;
+        loadMoreBtn.textContent = 'Load More';
+    }
+});

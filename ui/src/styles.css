@@ -1,173 +1,271 @@
+/* --- 1. Root Variables & General Setup --- */
+:root {
+    --primary-blue: #007aff;
+    --light-blue-bg: #eaf5ff;
+    --background-color: #f0f2f5;
+    --card-background: #ffffff;
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+    --border-color: #dee2e6;
+    --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+* {
+    box-sizing: border-box;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f0f2f5; /* Update to a lighter background */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    background-color: var(--background-color);
+    color: var(--text-primary);
+    line-height: 1.6;
 }
 
+/* --- 2. Main Layout & Header --- */
 .container {
-    max-width: 800px;
-    margin: auto;
-    padding: 2rem;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
 }
 
-h1 {
+.container h1 {
     text-align: center;
-    color: #007aff; /* Ocean blue color */
-    font-size: 3.5rem; /* Increase the size */
+    color: var(--primary-blue);
+    font-size: 2.5rem;
     font-family: 'Pacifico', cursive;
-    font-weight: bold; /* Make the text bold */
-}
-
-form {
-    display: flex;
-    justify-content: space-between;
+    margin-top: 0;
     margin-bottom: 2rem;
 }
 
-input, select {
-    padding: 0.5rem;
+/* --- 3. Input Form --- */
+#language-form {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 3rem;
+    background: var(--card-background);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+#word-input {
+    flex-grow: 1;
+}
+
+#word-input,
+#foreign-language-select {
+    padding: 0.75rem 1rem;
     font-size: 1rem;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: #f8f9fa;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-button {
-    padding: 0.5rem 1rem;
-    background-color: #007aff; /* Maintain harmony with button color */
-    color: white;
+#word-input:focus,
+#foreign-language-select:focus {
+    outline: none;
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+}
+
+#language-form button {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    background-color: var(--primary-blue);
     border: none;
+    border-radius: 8px;
     cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
 }
 
-button:hover {
-    background-color: #005ecb; /* Slightly darker shade on hover */
+#language-form button:hover:not(:disabled) {
+    background-color: #0069d9;
 }
 
+#language-form button:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+#language-form button:disabled {
+    background-color: #a0cfff;
+    cursor: not-allowed;
+}
+
+/* --- 4. Flashcards --- */
 #flashcard-container {
-    display: grid;
-    gap: 1rem;
+    perspective: 1000px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding-bottom: 80vh; /* Runway for last sticky card */
 }
 
 .flashcard {
-    background-color: #ffffff; /* Updated card color to light */
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    background: var(--card-background);
+    border-radius: 18px;
+    padding: 1.5rem 2rem;
+    box-shadow: var(--card-shadow);
+    position: sticky;
+    top: 20px;
+    min-height: 50vh;
+    opacity: 0;
+    transform: translateY(50px) rotateX(-20deg);
+    transform-origin: top center;
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
 }
 
-.flashcard h2 {
-    margin-top: 0;
-    color: #333; /* Maintain harmony with other text */
+.flashcard.visible {
+    opacity: 1;
+    transform: translateY(0) rotateX(0deg);
 }
 
-.flashcard section {
+/* --- 5. Card Icon Header --- */
+.flashcard-header {
+    display: flex;
+    align-items: center;
     margin-bottom: 1rem;
 }
 
-.foreign-language-text {
-    background-color: #d1e7ff; /* Light blue for foreign language highlight */
-    padding: 0.5rem;
-    border-radius: 4px;
-    font-weight: bold; /* Bold for foreign language */
-}
-
-.flashcard p {
-    margin: 0.5rem 0;
-}
-
-/* Styles for the Japanese content block */
-.japanese-block {
+.card-icon-container {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--light-blue-bg);
+    color: var(--primary-blue);
     display: flex;
-    flex-direction: column;
-    margin-bottom: 1rem; /* Space below the block */
-    padding: 1rem;
-    background-color: #f8f9fa;
-    border-radius: 6px;
-    border: 1px solid #e9ecef;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
 }
 
-.japanese-block p {
-    margin: 0;
-    padding: 0;
-    line-height: 1.4;
+.flashcard-body p {
+    margin: 0 0 0.75rem 0;
+    font-size: 1.1rem;
+    line-height: 1.7;
 }
 
-/* Furigana/Ruby characters */
-.line-ruby {
-    font-size: 0.7em;
-    margin-bottom: 0.2em;
-    color: #6c757d;
+.flashcard-body p:last-child {
+    margin-bottom: 0;
 }
 
-/* Main Japanese text */
-.line-main {
-    font-size: 1.4em; /* Larger than normal text */
-    font-weight: 500;
+/* --- 6. Content-Specific Styling --- */
+.list-item {
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
 }
 
-/* Romaji pronunciation */
-.line-romaji {
-    font-size: 0.8em;
-    color: #007bff;
-    margin-top: 0.2em;
+.list-item:first-child {
+    padding-top: 0;
 }
 
-/* Line-by-line translation */
-.line-translation {
-    font-size: 1em;
-    color: #495057;
-    margin-top: 0.4em;
+.list-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.item-translation,
+.item-explanation {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-top: 0.5rem !important;
+}
+
+.item-explanation {
     font-style: italic;
 }
 
-/* Media queries for responsiveness */
+/* --- 7. Japanese Block Styling --- */
+.japanese-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin: 0.5rem 0;
+}
+
+.line-main {
+    font-size: 1.6rem;
+    font-weight: 500;
+    line-height: 1.8; /* Increased for ruby text */
+}
+
+.line-main ruby {
+    ruby-position: over;
+}
+
+.line-main rt {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.line-romaji {
+    font-size: 1rem;
+    color: var(--primary-blue);
+    font-style: italic;
+}
+
+.line-translation {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    border-top: 1px dashed var(--border-color);
+    padding-top: 0.75rem;
+    margin-top: 0.75rem !important;
+}
+
+/* --- 8. Load More Button --- */
+#load-more-container {
+    text-align: center;
+    padding: 1rem 0;
+    display: none; /* Initially hidden */
+}
+
+#load-more-btn {
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    background-color: var(--primary-blue);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s;
+}
+
+#load-more-btn:hover:not(:disabled) {
+    background-color: #0069d9;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+#load-more-btn:disabled {
+    background-color: #a0cfff;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* --- 9. Responsive Design --- */
 @media (max-width: 600px) {
     .container {
         padding: 1rem;
     }
 
-    h1 {
-        font-size: 2rem; /* Slightly smaller header on small screens */
+    .container h1 {
+        font-size: 2rem;
     }
 
-    form {
+    #language-form {
         flex-direction: column;
-        gap: 10px; /* Add some space between form elements */
     }
 
-    input, select {
-        width: 100%;
-        max-width: 100%; /* Ensure input fields do not exceed container width */
+    .flashcard {
+        padding: 1.5rem;
+        min-height: 60vh;
     }
-
-    button {
-        width: 100%; /* Make the button full width */
-    }
-}
-
-/* Additional styles for form elements */
-form input {
-    max-width: calc(100% - 32px); /* Adjust this value to ensure proper fit */
-}
-
-#load-more-container {
-    position: sticky;
-    bottom: 0;
-    background-color: #f0f2f5; /* Match body background color */
-    padding: 1rem 0;
-    margin: 0;
-    text-align: center;
-    /* Add subtle shadow to separate from cards */
-    box-shadow: 0 -4px 6px -6px rgba(0, 0, 0, 0.1);
-    z-index: 1; /* Ensure button stays above cards */
-}
-
-#flashcard-container {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-    padding-bottom: 1rem; /* Add some space after last card */
-}
-
-/* Add padding to last card to prevent button overlap */
-.flashcard:last-of-type {
-    margin-bottom: 4rem;
 }
