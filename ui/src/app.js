@@ -78,6 +78,38 @@ document.getElementById('load-more-btn').addEventListener('click', async () => {
 });
 
 /**
+ * Creates a special HTML block for structured Japanese content.
+ * @param {object} data - The Japanese content object {lm, lrb, lrm, lt}.
+ * @returns {HTMLDivElement} The created DOM element for the block.
+ */
+function createJapaneseBlock(data) {
+    const block = document.createElement('div');
+    block.className = 'japanese-block';
+
+    const ruby = document.createElement('p');
+    ruby.className = 'line-ruby';
+    ruby.textContent = data.lrb;
+    block.appendChild(ruby);
+
+    const main = document.createElement('p');
+    main.className = 'line-main';
+    main.textContent = data.lm;
+    block.appendChild(main);
+
+    const romaji = document.createElement('p');
+    romaji.className = 'line-romaji';
+    romaji.textContent = data.lrm;
+    block.appendChild(romaji);
+
+    const translation = document.createElement('p');
+    translation.className = 'line-translation';
+    translation.textContent = data.lt;
+    block.appendChild(translation);
+
+    return block;
+}
+
+/**
  * Creates a single flashcard element with a title and content.
  * Content can be a simple string or an array of objects to be formatted.
  * @param {string} title - The title of the flashcard.
@@ -92,27 +124,57 @@ function createFlashcard(title, content) {
     titleElement.textContent = title;
     flashcardDiv.appendChild(titleElement);
 
-    if (typeof content === 'string') {
-        const contentElement = document.createElement('p');
-        contentElement.textContent = content;
-        flashcardDiv.appendChild(contentElement);
-    } else if (Array.isArray(content)) {
-        content.forEach(item => {
+    // Direct Translation
+    if (title.startsWith('Direct Translation')) {
+        if (typeof content === 'string') {
             const p = document.createElement('p');
-            // Handles both {vocabulary, translation} and {usage, translation} structures
-            const mainText = item.vocabulary || item.usage;
-            p.textContent = `${mainText} - ${item.translation}`;
+            p.textContent = content;
             flashcardDiv.appendChild(p);
-        });
-    } else if (typeof content === 'object' && content !== null) {
-        // Handle advancedContent
-        const contentText = document.createElement('p');
-        contentText.textContent = content.content;
-        const explanationText = document.createElement('p');
-        explanationText.style.fontStyle = 'italic'; // Differentiate explanation
-        explanationText.textContent = content.explanation;
-        flashcardDiv.appendChild(contentText);
-        flashcardDiv.appendChild(explanationText);
+        } else if (typeof content === 'object' && content !== null) {
+            flashcardDiv.appendChild(createJapaneseBlock(content));
+        }
+    }
+    // Related Vocabulary or Practical Usage
+    else if (title.startsWith('Related Vocabulary') || title.startsWith('Practical Usage')) {
+        if (Array.isArray(content)) {
+            content.forEach(item => {
+                const mainContent = item.vocabulary || item.usage;
+                if (typeof mainContent === 'string') {
+                    const p = document.createElement('p');
+                    p.textContent = `${mainContent} - ${item.translation}`;
+                    flashcardDiv.appendChild(p);
+                } else if (typeof mainContent === 'object' && mainContent !== null) {
+                    flashcardDiv.appendChild(createJapaneseBlock(mainContent));
+                    const explanation = document.createElement('p');
+                    explanation.textContent = item.translation; // Explanation below the block
+                    flashcardDiv.appendChild(explanation);
+                }
+            });
+        }
+    }
+    // Advanced Content
+    else if (title.startsWith('Advanced Content')) {
+        if (typeof content === 'object' && content !== null) {
+            const mainContent = content.content;
+            if (typeof mainContent === 'string') {
+                const p = document.createElement('p');
+                p.textContent = mainContent;
+                flashcardDiv.appendChild(p);
+            } else if (typeof mainContent === 'object' && mainContent !== null) {
+                flashcardDiv.appendChild(createJapaneseBlock(mainContent));
+            }
+            // Add the explanation below
+            const explanation = document.createElement('p');
+            explanation.style.fontStyle = 'italic';
+            explanation.textContent = content.explanation;
+            flashcardDiv.appendChild(explanation);
+        }
+    }
+    // Fallback for any other string content
+    else if (typeof content === 'string') {
+        const p = document.createElement('p');
+        p.textContent = content;
+        flashcardDiv.appendChild(p);
     }
 
     return flashcardDiv;

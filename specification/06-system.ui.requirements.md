@@ -6,3 +6,8 @@
   - Related vocabulary.
   - Practical usage examples in sentences.
   - An advanced content section with a more complex explanation or context.
+- For Japanese content, a special block format is used to provide detailed phonetic and translation information. This block is defined by the following fields from the API:
+  - **lm** (Line Main): The main Japanese line. Furigana (pronunciation guides) are included directly in this string in parentheses after the corresponding Kanji. For example: `日本語(にほんご)を勉強(べんきょう)します`.  The font size is slightly larger than normal body text.
+  - **lrm** (Line Romaji): The romanized pronunciation of the entire sentence. This is displayed below the main Japanese line in a smaller font.
+  - **lt** (Line Translation): The direct, line-by-line English translation. This is displayed below the Romaji.
+- Underneath the Japanese block or other foreign language content, include any relevant explanations, such as grammar points, cultural context, or usage tips.

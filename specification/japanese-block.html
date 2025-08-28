@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Japanese Annotation Template</title>
+    <style>
+        /* General Body & Layout */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans CJK JP", "Yu Gothic", Meiryo, sans-serif;
+            background-color: #fdfdfd;
+            color: #333;
+            margin: 0;
+            padding: 2rem 2rem 6rem; /* Add bottom padding to avoid overlap with controls */
+        }
+
+        main {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem; /* Space between blocks */
+        }
+
+        /* Annotation Block */
+        .annotation-block {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        /* Textarea Styling */
+        textarea {
+            width: 100%;
+            border: none;
+            outline: none;
+            padding: 0;
+            margin: 0;
+            resize: none;
+            overflow: hidden; /* Hide scrollbar */
+            background-color: transparent;
+            font-family: inherit;
+            line-height: 1.4;
+        }
+
+        textarea::placeholder {
+            color: #ccc;
+            font-style: italic;
+        }
+
+        /* Line-specific styles */
+        .line-ruby {
+            font-size: 0.6em;
+            margin-bottom: 0.2em;
+        }
+
+        .line-main {
+            font-size: 1.2em;
+            font-weight: 500;
+        }
+
+        .line-romaji {
+            font-size: 0.6em;
+            color: #007bff;
+            margin-top: 0.2em;
+        }
+
+        .line-translation {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 0.4em;
+        }
+
+        /* Controls */
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .controls button {
+            font-size: 1.5rem;
+            font-weight: bold;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 1px solid #ddd;
+            background-color: white;
+            color: #555;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.2s ease-in-out;
+        }
+
+        .controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            border-color: #bbb;
+        }
+
+        #save-btn {
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <main id="annotation-container">
+        <!-- Annotation blocks are dynamically inserted here. -->
+        <!-- When you save and re-open the file, your saved blocks will appear here. -->
+    </main>
+
+    <div class="controls">
+        <button id="add-block-btn" title="Add new block">+</button>
+        <button id="save-btn" title="Save file">Save</button>
+    </div>
+
+    <template id="annotation-block-template">
+        <div class="annotation-block">
+            <textarea class="line-ruby" placeholder="nyuuryoku" rows="1"></textarea>
+            <textarea class="line-main" placeholder="入力してください" rows="1"></textarea>
+            <textarea class="line-romaji" placeholder="nyuuryoku shite ku dasai" rows="1"></textarea>
+            <textarea class="line-translation" placeholder="请输入" rows="1"></textarea>
+        </div>
+    </template>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('annotation-container');
+            const template = document.getElementById('annotation-block-template');
+            const addBtn = document.getElementById('add-block-btn');
+            const saveBtn = document.getElementById('save-btn');
+            const controls = document.querySelector('.controls');
+
+            // This will hold the reference to the saved file for overwriting.
+            let fileHandle = null;
+
+            // Function to auto-resize a textarea based on its content
+            const autoResize = (textarea) => {
+                textarea.style.height = 'auto'; // Reset height to shrink if needed
+                textarea.style.height = textarea.scrollHeight + 'px';
+            };
+
+            // Function to initialize a block (either new or from a saved file)
+            const initializeBlock = (block) => {
+                block.querySelectorAll('textarea').forEach(textarea => {
+                    // Sync value from innerHTML (for saved files) and resize
+                    if (textarea.innerHTML) {
+                        textarea.value = textarea.innerHTML;
+                    }
+                    autoResize(textarea);
+                });
+            };
+
+            // Function to add a new block from the template
+            const addNewBlock = () => {
+                const newBlockFragment = template.content.cloneNode(true);
+                const newBlock = newBlockFragment.querySelector('.annotation-block');
+
+                // Find the spacer, if it exists, to insert the new block before it.
+                let spacer = document.getElementById('scroll-spacer');
+
+                // Insert the new block before the spacer, or at the end if no spacer exists.
+                if (spacer) {
+                    container.insertBefore(newBlockFragment, spacer);
+                } else {
+                    container.appendChild(newBlockFragment);
+                }
+
+                // Now, check if we need to scroll.
+                const newBlockRect = newBlock.getBoundingClientRect();
+                const controlsRect = controls.getBoundingClientRect();
+                const buffer = 20; // A 20px comfort buffer above the buttons.
+
+                if (newBlockRect.bottom > controlsRect.top - buffer) {
+                    if (!spacer) {
+                        spacer = document.createElement('div');
+                        spacer.id = 'scroll-spacer';
+                        container.appendChild(spacer);
+                    }
+                    spacer.style.height = `${window.innerHeight / 2}px`;
+
+                    newBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            };
+
+            // Persist the current value of textareas into the DOM's innerHTML before saving
+            const persistTextareaContent = () => {
+                document.querySelectorAll('textarea').forEach(textarea => {
+                    textarea.innerHTML = textarea.value;
+                });
+            };
+
+            // Helper to remove the spacer div before saving the file
+            const removeSpacerForSave = () => {
+                const spacer = document.getElementById('scroll-spacer');
+                if (spacer) {
+                    spacer.remove();
+                }
+            };
+
+            // The legacy save method for older browsers
+            const saveFileLegacy = () => {
+                persistTextareaContent();
+                removeSpacerForSave();
+                const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'japanese-annotations.html';
+                document.body.appendChild(a); // Required for Firefox
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
+            // Function to write content to a file using its handle
+            const writeFile = async (handle) => {
+                persistTextareaContent();
+                removeSpacerForSave();
+                const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
+                const writable = await handle.createWritable();
+                await writable.write(blob);
+                await writable.close();
+            };
+
+            // "Save As" action: Prompts the user for a file location.
+            const saveFileAs = async () => {
+                try {
+                    const handle = await window.showSaveFilePicker({ types: [{ description: 'HTML Files', accept: { 'text/html': ['.html'] } }] });
+                    fileHandle = handle; // Store the handle for future "Save" actions
+                    await writeFile(handle);
+                    document.title = handle.name; // Update page title to the new file name
+                } catch (err) {
+                    // Ignore abort errors if the user cancels the dialog
+                    if (err.name !== 'AbortError') {
+                        console.error(err);
+                    }
+                }
+            };
+
+            // "Save" action: Overwrites the existing file, or acts as "Save As" if no file is open.
+            const saveFile = async () => {
+                if ('showSaveFilePicker' in window) {
+                    if (fileHandle) {
+                        await writeFile(fileHandle);
+                    } else {
+                        await saveFileAs(); // If no file is open, "Save" is the same as "Save As"
+                    }
+                } else {
+                    saveFileLegacy(); // Fallback for older browsers
+                }
+            };
+
+            // --- Event Listeners ---
+            addBtn.addEventListener('click', addNewBlock);
+            saveBtn.addEventListener('click', saveFile);
+
+            // Use event delegation for efficient auto-resizing on input
+            container.addEventListener('input', (e) => {
+                if (e.target.tagName.toLowerCase() === 'textarea') {
+                    autoResize(e.target);
+                }
+            });
+
+            // --- Initial State ---
+            // If blocks already exist (from a saved file), initialize them.
+            // Otherwise (a fresh template), add the first block.
+            const existingBlocks = container.querySelectorAll('.annotation-block');
+            if (existingBlocks.length === 0) {
+                addNewBlock();
+            } else {
+                existingBlocks.forEach(initializeBlock);
+            }
+        });
+    </script>
+
+</body>
+</html>

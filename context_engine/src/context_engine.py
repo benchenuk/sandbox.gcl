@@ -9,7 +9,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.runnables import Runnable
 from pydantic import BaseModel, Field
-from typing import List, Any, Optional, Dict
+from typing import List, Any, Optional, Dict, Union
 
 # --- Configuration ---
 load_dotenv()
@@ -29,20 +29,25 @@ OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL_NAME = os.environ.get("OLLAMA_MODEL_NAME", "gemma3:4b-it-qat")
 
 # --- Data Structures (Pydantic Models) ---
+class JapaneseTextBlock(BaseModel):
+    lm: str = Field(description="The main Japanese line, with Furigana in parentheses after the Kanji, e.g., '日本語(にほんご)を勉強(べんきょう)しています'.")
+    lrm: str = Field(description="Romaji pronunciation below the main line, e.g., 'nyuuryoku shite kudasai'.")
+    lt: str = Field(description="Line-by-line translation in the home language, e.g., 'Please enter'.")
+
 class VocabularyItem(BaseModel):
-    vocabulary: str = Field(description="A related word or phrase in the foreign language")
-    translation: str = Field(description="The translation of the vocabulary in the home language")
+    vocabulary: Union[str, JapaneseTextBlock] = Field(description="A related word or phrase. For Japanese, this will be a detailed block.")
+    translation: str = Field(description="The translation or explanation of the vocabulary in the home language.")
 
 class UsageSentence(BaseModel):
-    usage: str = Field(description="A practical usage sentence in the foreign language")
+    usage: Union[str, JapaneseTextBlock] = Field(description="A practical usage sentence. For Japanese, this will be a detailed block.")
     translation: str = Field(description="The translation and explanation of the usage in the home language")
 
 class AdvancedContent(BaseModel):
-    content: str = Field(description="A short conversation or multi-sentence paragraph in the foreign language")
+    content: Union[str, JapaneseTextBlock] = Field(description="A short conversation or multi-sentence paragraph. For Japanese, this will be a detailed block.")
     explanation: str = Field(description="The translation and explanation of the advanced content in the home language")
 
 class LanguageLesson(BaseModel):
-    directTranslation: str = Field(description="The direct translation of the user's word/phrase")
+    directTranslation: Union[str, JapaneseTextBlock] = Field(description="The direct translation of the user's word/phrase. For Japanese, this will be a detailed block.")
     relatedVocabulary: List[VocabularyItem] = Field(description="A list of related vocabulary items")
     practicalUsage: List[UsageSentence] = Field(description="A list of practical usage sentences")
     advancedContent: AdvancedContent = Field(description="Advanced content like a short conversation")
@@ -103,9 +108,18 @@ SYSTEM_PROMPT = """
 You are an expert language tutor. Your task is to generate a comprehensive language lesson based on user input.
 The user will provide a word or phrase, in their home language, and a target foreign language.
 You MUST respond with a single, valid JSON object that strictly adheres to the schema provided.
-Do NOT add any commentary, markdown, or any text outside of the JSON object. 
-For Japanese:
-- Always include pronunciation using Romaji.
+Do NOT add any commentary, markdown, or any text outside of the JSON object.
+
+--- Special Instructions for Japanese ---
+When the target language is Japanese, you MUST provide detailed phonetic and translation information for any field that contains Japanese sentences or complex phrases.
+Specifically, for the `directTranslation`, `relatedVocabulary.vocabulary`, `practicalUsage.usage`, and `advancedContent.content` fields, you MUST use the following JSON object structure instead of a simple string:
+{{
+  "lm": "The main Japanese line, with Furigana in parentheses right after the corresponding Kanji. Example: '日本語(にほんご)を勉強(べんきょう)しています'.",
+  "lrm": "The Romaji pronunciation of the entire line, e.g., 'Nihongo o benkyō shite imasu'.",
+  "lt": "The direct English translation of the line, e.g., 'I am studying Japanese.'."
+}}
+For simpler, single-word vocabulary items without complex Kanji, you may use a simple string.
+The separate `translation` or `explanation` fields should still be used for broader context, grammar points, or cultural nuances, not for the direct line-by-line translation which belongs in the `lt` field.
 """
 
 @app.route('/api/lesson', methods=['POST'])

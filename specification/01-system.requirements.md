@@ -39,41 +39,40 @@ The app aims to embed language learning within a system that promotes:
 ## 4. Potential App Structure & Workflow
 
 ### a) Initial Screen/User Input
-    *   Clean, simple interface prompting the user: "What are you interested in today? Enter keywords..."
-    *   User enters query (e.g., "Miso Ramen," "Buying electronics").
+*   Clean, simple interface prompting the user: "What are you interested in today? Enter keywords..."
+*   User enters query (e.g., "Miso Ramen," "Buying electronics").
 
 ### b) Context Generation Engine (AI Backend)
-    *   Analyzes keyword input to identify core concepts.
-    *   Generates a sequence of potential learning nodes based on estimated relevance and depth.
+*   Analyzes keyword input to identify core concepts.
+*   Generates a sequence of potential learning nodes based on estimated relevance and depth.
 
 ### c) Dynamic Learning Path Presentation
-    *   The app presents the generated path visually, perhaps showing:
-        *   The initial query word/phrase in context.
-        *   Key vocabulary derived from keywords or examples.
-        *   A branching point where user can choose direction (e.g., "More recipes," "Cooking terms").
-        *   Phrases and simple sentences related to the domain.
+*   The app presents the generated path visually, perhaps showing:
+    *   The initial query word/phrase in context.
+    *   Key vocabulary derived from keywords or examples.
+    *   A branching point where user can choose direction (e.g., "More recipes," "Cooking terms").
+    *   Phrases and simple sentences related to the domain.
 
 ### d) Interactive Bite-Sized Modules
-    *   **Example Path for "Miso Ramen":**
-        1.  `Query:` Miso Ramen.
-            `Target:` 焼きたらま soup (Japanese)
-            *(User sees Japanese word)*
-        2.  `Vocab:` 料理 motsu ramen dish (e.g., from the query). User can explore related words like "soup" (`汁`, `スープ`), "noodles" (`麺`).
-        3.  `Phrase:` Ordering it: ミソラーメンください Misoraamen kudasai? -> Provides translation and maybe pronunciation.
-        4.  `Example/Sentence:` *e.g.,* 鉄火を使わないで、明太をかけるのがいいです。 Tokureki o shiyawanaide, aitama o kayoseru no yoi desu. ("It's better not to use cast iron and put bonito on top.")
-        5.  `Cultural Context:` *e.g.,* Discusses the origin (Tokyo vs Osaka), regional variations in Japan.
-    *   **Branching:** At any point, user can see "More" options:
-        *   Related dishes? *e.g.,* Tonkotsu Ramen -> Provides initial info if chosen path allows.
-        *   Shopping terms needed? *e.g.,* 食器 shokei (tableware), 料理器具 rairyiki (cooking utensils).
-        *   Conversation starters: "I ordered Miso Ramen, but the broth was too salty..." -> Generates Japanese response options and translations.
+*   **Example Path for "Miso Ramen":**
+    1.  `Query:` Miso Ramen.
+        `Target:` 焼きたらま soup (Japanese)
+        *(User sees Japanese word)*
+    2.  `Vocab:` 料理 motsu ramen dish (e.g., from the query). User can explore related words like "soup" (`汁`, `スープ`), "noodles" (`麺`).
+    3.  `Phrase:` Ordering it: ミソラーメンください Misoraamen kudasai? -> Provides translation and maybe pronunciation.
+    4.  `Example/Sentence:` *e.g.,* 鉄火を使わないで、明太をかけるのがいいです。 Tokureki o shiyawanaide, aitama o kayoseru no yoi desu. ("It's better not to use cast iron and put bonito on top.")
+    5.  `Cultural Context:` *e.g.,* Discusses the origin (Tokyo vs Osaka), regional variations in Japan.
+*   **Branching:** At any point, user can see "More" options:
+    *   Related dishes? *e.g.,* Tonkotsu Ramen -> Provides initial info if chosen path allows.
+    *   Shopping terms needed? *e.g.,* 食器 shokei (tableware), 料理器具 rairyiki (cooking utensils).
+    *   Conversation starters: "I ordered Miso Ramen, but the broth was too salty..." -> Generates Japanese response options and translations.
 
 ### e) User Control
-    *   Option to skip a module entirely.
-    *   Option to mark a topic as mastered or needing more focus (for future algorithm learning).
-    *   Option to trigger a "Quiz" mode for that word/phrase immediately.
+*   Option to skip a module entirely.
+*   Option to mark a topic as mastered or needing more focus (for future algorithm learning).
+*   Option to trigger a "Quiz" mode for that word/phrase immediately.
 
 ## 5. Key Features
-
 *   **Minimalist Keyword Trigger:** Fast input, immediate context generation preview.
 *   **Dynamic Progression Pathway:** Clearly shows the path forward based on keywords.
 *   **Modular Bite-Sized Content:**
@@ -86,7 +85,6 @@ The app aims to embed language learning within a system that promotes:
 *   **Immersive Potential:** Could incorporate short audio clips of authentic speech containing the target word/phrase, perhaps from news sources related to the keyword topic.
 
 ## 6. Challenges & Considerations
-
 *   **AI Output Quality & Consistency:** Ensuring generated content is grammatically correct, linguistically appropriate (for the user's level), culturally relevant, and not repetitive or nonsensical.
 *   **Categorization of Keywords:** Developing algorithms to map keywords into plausible language learning domains effectively.
 *   **User Guidance vs. Freedom:** Need mechanisms to help users explore meaningfully without feeling lost or overwhelmed by choices. Initial paths might be simpler until user engagement patterns are clearer.

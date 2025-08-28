@@ -73,6 +73,51 @@ button:hover {
     margin: 0.5rem 0;
 }
 
+/* Styles for the Japanese content block */
+.japanese-block {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1rem; /* Space below the block */
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.japanese-block p {
+    margin: 0;
+    padding: 0;
+    line-height: 1.4;
+}
+
+/* Furigana/Ruby characters */
+.line-ruby {
+    font-size: 0.7em;
+    margin-bottom: 0.2em;
+    color: #6c757d;
+}
+
+/* Main Japanese text */
+.line-main {
+    font-size: 1.4em; /* Larger than normal text */
+    font-weight: 500;
+}
+
+/* Romaji pronunciation */
+.line-romaji {
+    font-size: 0.8em;
+    color: #007bff;
+    margin-top: 0.2em;
+}
+
+/* Line-by-line translation */
+.line-translation {
+    font-size: 1em;
+    color: #495057;
+    margin-top: 0.4em;
+    font-style: italic;
+}
+
 /* Media queries for responsiveness */
 @media (max-width: 600px) {
     .container {
